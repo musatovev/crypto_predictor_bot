@@ -1,10 +1,15 @@
 import csv
 
-import pygame
-from pygame.draw import line
 from tensorflow import keras
 
 from kline import Kline
+
+
+PRICE_LESS = 0
+PRICE_STABLE = 1
+PRICE_RISE = 2
+
+TRIGGER = 1
 
 
 def get_data(files):
@@ -22,8 +27,6 @@ def get_data(files):
                 else:
                     klines.append(Kline(row))
                     line_count += 1
-
-
 
         price_before = float()
         price_after = float()
@@ -52,48 +55,51 @@ def get_data(files):
 
             if price_before >= price_after:
                 # Цена ПОСЛЕ меньше на TRIGGER процентов
-                mass = 0
+                answer = PRICE_LESS
 
                 # Различие между ценой не более TRIGGER процентов
                 if (100 - price_after / price_before * 100) < TRIGGER:
-                    mass = 1
+                    answer = PRICE_STABLE
 
             else:
                 # Цена ПОСЛЕ больше на TRIGGER процентов
-                mass = 2
+                answer = PRICE_RISE
 
                 # Различие между ценой не более TRIGGER процентов
                 if (100 - price_before / price_after * 100) < TRIGGER:
-                    mass = 1
+                    answer = PRICE_STABLE
 
-            train_answers.append(mass)
+            train_answers.append(answer)
 
     return train_data, train_answers
 
 
 if __name__ == '__main__':
 
-    WHITE = (255, 255, 255)
-    BLACK = (0, 0, 0)
-    GRAY = (125, 125, 125)
-    LIGHT_BLUE = (64, 128, 255)
-    GREEN = (0, 200, 64)
-    RED = (255, 0, 0)
-    YELLOW = (225, 225, 0)
-    PINK = (230, 50, 230)
+    all_data, all_answers = get_data(['ETHBTC-1h-data.csv',
+                                      'ADABTC-1h-data.csv',
+                                      'ZILBTC-1h-data.csv',
+                                      'XLMBTC-1h-data.csv',
+                                      'LINKBTC-1h-data.csv',
+                                      'BCHBTC-1h-data.csv',
+                                      'VETBTC-1h-data.csv',
+                                      'XRPBTC-1h-data.csv',
+                                      'NEOBTC-1h-data.csv',
+                                      'LTCBTC-1h-data.csv',
+                                      'EOSBTC-1h-data.csv',
+                                      'MATICBTC-1h-data.csv',
+                                      'XTZBTC-1h-data.csv',
+                                      'TRXBTC-1h-data.csv',
+                                      'ERDBTC-1h-data.csv',
+                                      'XMRBTC-1h-data.csv'])
 
-    TRIGGER = 1
-    WIDTH = 500
-    HEIGHT = 900
-
-    all_data, all_answers = get_data(['ETHBTC-1h-data.csv'])
     test_data, test_answers = all_data[int(len(all_data) / 1.1):], all_answers[int(len(all_answers) / 1.1):]
     train_data, train_answers = all_data[:int(len(all_data) / 1.1)], all_answers[:int(len(all_answers) / 1.1)]
 
     model = keras.Sequential()
     model.add(keras.layers.Flatten(input_shape=(81,)))
-    model.add(keras.layers.Dense(512, activation='linear'))
     model.add(keras.layers.Dense(1024, activation='linear'))
+    model.add(keras.layers.Dense(512, activation='linear'))
     model.add(keras.layers.Dense(256, activation='linear'))
     model.add(keras.layers.Dense(3, activation='linear'))
 
@@ -101,7 +107,7 @@ if __name__ == '__main__':
                   loss='sparse_categorical_crossentropy',
                   metrics=['accuracy'])
 
-    model.fit(train_data, train_answers, epochs=1, batch_size=10, verbose=1)
+    model.fit(train_data, train_answers, epochs=1, batch_size=2, verbose=1)
 
     test_loss, test_acc = model.evaluate(test_data, test_answers, verbose=1)
 
@@ -109,70 +115,47 @@ if __name__ == '__main__':
 
     predictions = model.predict(test_data)
 
-    pygame.init()
+    rise_predicts = 0
+    stable_predict = 0
+    less_predict = 0
 
-    sc = pygame.display.set_mode((WIDTH, HEIGHT))
-    graphic = 0
-    while True:
-        index_y = 3
-        coord_x = 10
-        previous_y = int()
-        previous_x = int()
-        coord_y_for_predict = int()
-        previous_y_for_predict = int()
+    correct_positive_predicts = 0
+    correct_stable_predict = 0
+    correct_less_predict = 0
 
-        while index_y < len(test_data[graphic]):
+    print('Всего предсказаний - ' + str(len(predictions)))
+    for i in range(len(predictions)):
+        predict = list(predictions[i]).index(max(predictions[i]))
+        if predict == PRICE_RISE:
+            rise_predicts += 1
+            if predict == test_answers[i]:
+                correct_positive_predicts += 1
+        elif predict == PRICE_STABLE:
+            stable_predict += 1
+            if predict == test_answers[i]:
+                correct_stable_predict += 1
+        elif predict == PRICE_LESS:
+            less_predict += 1
+            if predict == test_answers[i]:
+                correct_less_predict += 1
 
-            coord_y = HEIGHT - test_data[graphic][index_y] * 200000 % 1000
-            coord_y_for_predict = coord_y - HEIGHT / 2
+    print('Всего предсказаний роста курса - ' + str(rise_predicts))
+    print('Из них успешных предсказаний - ' + str(correct_positive_predicts))
+    if rise_predicts != 0:
+        print('Точность предсказания - ' + str((100 / rise_predicts * correct_positive_predicts)))
+    else:
+        print('Точность предсказания - 0')
 
-            if index_y > 3:
-                pygame.draw.line(sc, WHITE, (previous_x, previous_y_for_predict), (coord_x, coord_y_for_predict), 2)
-                pygame.draw.line(sc, WHITE, (previous_x, previous_y), (coord_x, coord_y), 2)
+    print('\n\nВсего предсказаний стабильности курса - ' + str(stable_predict))
+    print('Из них успешных предсказаний - ' + str(correct_stable_predict))
+    if stable_predict != 0:
+        print('Точность предсказания - ' + str((100 / stable_predict * correct_stable_predict)))
+    else:
+        print('Точность предсказания - 0')
 
-            previous_y = coord_y
-            previous_x = coord_x
-            previous_y_for_predict = coord_y_for_predict
-
-            index_y += 9
-            coord_x += 30
-
-        answer_y = previous_y
-        COLOR = LIGHT_BLUE
-        if train_answers[graphic] < 1:
-            # вверх
-            answer_y -= 30
-            COLOR = GREEN
-        elif train_answers[graphic] > 1:
-            # вниз
-            answer_y += 30
-            COLOR = RED
-
-        predict_y = previous_y_for_predict
-        COLOR_PREDICT = LIGHT_BLUE
-        if list(predictions[graphic]).index(max(predictions[graphic])) > 1:
-            predict_y -= 30
-            COLOR_PREDICT = GREEN
-        elif list(predictions[graphic]).index(max(predictions[graphic])) < 1:
-            predict_y += 30
-            COLOR_PREDICT = RED
-
-        pygame.draw.line(sc, COLOR_PREDICT, (previous_x, previous_y_for_predict), (coord_x + 50, predict_y), 2)
-        pygame.draw.line(sc, COLOR, (previous_x, previous_y), (coord_x + 50, answer_y), 2)
-
-        pygame.display.update()
-        update = True
-        while update:
-            pygame.time.delay(10)
-            for i in pygame.event.get():
-                if i.type == pygame.QUIT:
-                    exit()
-                elif i.type == pygame.KEYDOWN:
-                    if i.key == pygame.K_RIGHT:
-                        graphic += 1
-                        update = False
-                        sc.fill(BLACK)
-                    elif i.key == pygame.K_LEFT:
-                        graphic -= 1
-                        update = False
-                        sc.fill(BLACK)
+    print('\n\nВсего предсказаний падения курса - ' + str(less_predict))
+    print('Из них успешных предсказаний - ' + str(correct_less_predict))
+    if less_predict != 0:
+        print('Точность предсказания - ' + str((100 / less_predict * correct_less_predict)))
+    else:
+        print('Точность предсказания - 0')
