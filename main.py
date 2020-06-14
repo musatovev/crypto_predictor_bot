@@ -126,9 +126,10 @@ if __name__ == '__main__':
     print('Всего предсказаний - ' + str(len(predictions)))
     for i in range(len(predictions)):
         predict = list(predictions[i]).index(max(predictions[i]))
-        if predict == PRICE_RISE:
+        if predict == PRICE_RISE and predictions[i][PRICE_RISE] > 0:
             rise_predicts += 1
             if predict == test_answers[i]:
+                print(predictions[i][PRICE_RISE])
                 correct_positive_predicts += 1
         elif predict == PRICE_STABLE:
             stable_predict += 1
@@ -139,21 +140,21 @@ if __name__ == '__main__':
             if predict == test_answers[i]:
                 correct_less_predict += 1
 
-    print('Всего предсказаний роста курса - ' + str(rise_predicts))
+    print('\n\nВсего предсказаний роста курса - ' + str(rise_predicts))
     print('Из них успешных предсказаний - ' + str(correct_positive_predicts))
     if rise_predicts != 0:
         print('Точность предсказания - ' + str((100 / rise_predicts * correct_positive_predicts)))
     else:
         print('Точность предсказания - 0')
 
-    print('\n\nВсего предсказаний стабильности курса - ' + str(stable_predict))
+    print('\nВсего предсказаний стабильности курса - ' + str(stable_predict))
     print('Из них успешных предсказаний - ' + str(correct_stable_predict))
     if stable_predict != 0:
         print('Точность предсказания - ' + str((100 / stable_predict * correct_stable_predict)))
     else:
         print('Точность предсказания - 0')
 
-    print('\n\nВсего предсказаний падения курса - ' + str(less_predict))
+    print('\nВсего предсказаний падения курса - ' + str(less_predict))
     print('Из них успешных предсказаний - ' + str(correct_less_predict))
     if less_predict != 0:
         print('Точность предсказания - ' + str((100 / less_predict * correct_less_predict)))
