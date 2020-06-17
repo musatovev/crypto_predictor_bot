@@ -84,58 +84,90 @@ if __name__ == '__main__':
 
     TRIGGER = 1
     WIDTH = 500
-    HEIGHT = 900
+    HEIGHT = 400
 
     all_data, all_answers = get_data(['ETHBTC-1h-data.csv'])
     test_data, test_answers = all_data[int(len(all_data) / 1.1):], all_answers[int(len(all_answers) / 1.1):]
     train_data, train_answers = all_data[:int(len(all_data) / 1.1)], all_answers[:int(len(all_answers) / 1.1)]
 
-    model = keras.Sequential()
-    model.add(keras.layers.Flatten(input_shape=(81,)))
-    model.add(keras.layers.Dense(512, activation='linear'))
-    model.add(keras.layers.Dense(1024, activation='linear'))
-    model.add(keras.layers.Dense(256, activation='linear'))
-    model.add(keras.layers.Dense(3, activation='linear'))
+    # model = keras.Sequential()
+    # model.add(keras.layers.Flatten(input_shape=(81,)))
+    # model.add(keras.layers.Dense(512, activation='linear'))
+    # model.add(keras.layers.Dense(1024, activation='linear'))
+    # model.add(keras.layers.Dense(256, activation='linear'))
+    # model.add(keras.layers.Dense(3, activation='linear'))
 
-    model.compile(optimizer='rmsprop',
-                  loss='sparse_categorical_crossentropy',
-                  metrics=['accuracy'])
-
-    model.fit(train_data, train_answers, epochs=1, batch_size=10, verbose=1)
-
-    test_loss, test_acc = model.evaluate(test_data, test_answers, verbose=1)
-
-    print('Точность на проверочных данных:', test_acc, '\n')
-
-    predictions = model.predict(test_data)
+    # model.compile(optimizer='rmsprop',
+    #               loss='sparse_categorical_crossentropy',
+    #               metrics=['accuracy'])
+    #
+    # model.fit(train_data, train_answers, epochs=1, batch_size=10, verbose=1)
+    #
+    # test_loss, test_acc = model.evaluate(test_data, test_answers, verbose=1)
+    #
+    # print('Точность на проверочных данных:', test_acc, '\n')
+    #
+    # predictions = model.predict(test_data)
 
     pygame.init()
+
+
 
     sc = pygame.display.set_mode((WIDTH, HEIGHT))
     graphic = 0
     while True:
-        index_y = 3
+        y = 3
         coord_x = 10
         previous_y = int()
         previous_x = int()
         coord_y_for_predict = int()
         previous_y_for_predict = int()
 
-        while index_y < len(test_data[graphic]):
+        y = 1
+        mass = list()
+        while y < len(test_data[graphic]):
+            mass.append(test_data[graphic][y])
+            y += 9
 
-            coord_y = HEIGHT - test_data[graphic][index_y] * 200000 % 1000
-            coord_y_for_predict = coord_y - HEIGHT / 2
+        print(mass)
+        print(max(mass))
+        maximum = max(mass)
+        minimum = min(mass)
+        mass = [(el - minimum) * ((HEIGHT/2) / (maximum - minimum)) + (HEIGHT / 4) for el in mass]
+        print(mass)
+        y = 0
+        while y < len(mass):
 
-            if index_y > 3:
-                pygame.draw.line(sc, WHITE, (previous_x, previous_y_for_predict), (coord_x, coord_y_for_predict), 2)
-                pygame.draw.line(sc, WHITE, (previous_x, previous_y), (coord_x, coord_y), 2)
+            # coord_y = HEIGHT - test_data[graphic][y] * 200000 % 1000
+            # coord_y_for_predict = coord_y - HEIGHT / 2
 
-            previous_y = coord_y
+            if y > 0:
+                # pygame.draw.line(sc, WHITE, (previous_x, previous_y_for_predict), (coord_x, coord_y_for_predict), 2)
+                pygame.draw.line(sc, WHITE, (previous_x, previous_y), (coord_x, mass[y]), 2)
+
+            previous_y = mass[y]
             previous_x = coord_x
             previous_y_for_predict = coord_y_for_predict
 
-            index_y += 9
+            y += 1
             coord_x += 30
+
+
+        # while index_y < len(test_data[graphic]):
+        #
+        #     coord_y = HEIGHT - test_data[graphic][index_y] * 200000 % 1000
+        #     coord_y_for_predict = coord_y - HEIGHT / 2
+        #
+        #     if index_y > 0:
+        #         pygame.draw.line(sc, WHITE, (previous_x, previous_y_for_predict), (coord_x, coord_y_for_predict), 2)
+        #         pygame.draw.line(sc, WHITE, (previous_x, previous_y), (coord_x, coord_y), 2)
+        #
+        #     previous_y = coord_y
+        #     previous_x = coord_x
+        #     previous_y_for_predict = coord_y_for_predict
+        #
+        #     index_y += 9
+        #     coord_x += 30
 
         answer_y = previous_y
         COLOR = LIGHT_BLUE
@@ -148,16 +180,16 @@ if __name__ == '__main__':
             answer_y += 30
             COLOR = RED
 
-        predict_y = previous_y_for_predict
-        COLOR_PREDICT = LIGHT_BLUE
-        if list(predictions[graphic]).index(max(predictions[graphic])) > 1:
-            predict_y -= 30
-            COLOR_PREDICT = GREEN
-        elif list(predictions[graphic]).index(max(predictions[graphic])) < 1:
-            predict_y += 30
-            COLOR_PREDICT = RED
+        # predict_y = previous_y_for_predict
+        # COLOR_PREDICT = LIGHT_BLUE
+        # if list(predictions[graphic]).index(max(predictions[graphic])) > 1:
+        #     predict_y -= 30
+        #     COLOR_PREDICT = GREEN
+        # elif list(predictions[graphic]).index(max(predictions[graphic])) < 1:
+        #     predict_y += 30
+        #     COLOR_PREDICT = RED
 
-        pygame.draw.line(sc, COLOR_PREDICT, (previous_x, previous_y_for_predict), (coord_x + 50, predict_y), 2)
+        # pygame.draw.line(sc, COLOR_PREDICT, (previous_x, previous_y_for_predict), (coord_x + 50, predict_y), 2)
         pygame.draw.line(sc, COLOR, (previous_x, previous_y), (coord_x + 50, answer_y), 2)
 
         pygame.display.update()
