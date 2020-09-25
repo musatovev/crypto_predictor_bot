@@ -2,3 +2,5 @@ python-binance
 bitmex-client
 tensorflow
 pygame
+pandas
+python-telegram-bot
